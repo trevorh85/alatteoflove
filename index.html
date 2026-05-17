@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milton Coffee & Lattes</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; }
+    .menu-item { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 8px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #0070ba; color: white; border: none; border-radius: 4px; }
+    #cart { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+    #paypal-button-container { margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <h1>Milton Coffee & Lattes ☕</h1>
+  <p>Neighborhood curbside pickup!</p>
+
+  <div id="menu">
+    <div class="menu-item">
+      <h3>Iced Latte</h3>
+      <p>$4.00</p>
+      <button onclick="addToCart('Iced Latte', 4.00)">Add to Order</button>
+    </div>
+    <div class="menu-item">
+      <h3>Hot Coffee</h3>
+      <p>$2.50</p>
+      <button onclick="addToCart('Hot Coffee', 2.50)">Add to Order</button>
+    </div>
+  </div>
+
+  <div id="cart" style="display: none;">
+    <h2>Your Order</h2>
+    <ul id="cart-items" style="list-style: none; padding: 0;"></ul>
+    <h3>Total: $<span id="cart-total">0.00</span></h3>
+    
+    <!-- PayPal & Venmo Buttons will render here -->
+    <div id="paypal-button-container"></div>
+  </div>
+
+  <!-- PayPal JS SDK. Notice the enable-funding=venmo parameter -->
+  <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD&enable-funding=venmo"></script>
+  
+  <script>
+    let cartTotal = 0;
+    let orderItems = [];
+    let buttonsRendered = false;
+
+    function addToCart(itemName, price) {
+      orderItems.push({ name: itemName, price: price });
+      cartTotal += price;
+      
+      const cartList = document.getElementById('cart-items');
+      const li = document.createElement('li');
+      li.innerText = `${itemName} - $${price.toFixed(2)}`;
+      cartList.appendChild(li);
+      
+      document.getElementById('cart-total').innerText = cartTotal.toFixed(2);
+      document.getElementById('cart').style.display = 'block';
+
+      if (!buttonsRendered) {
+        renderPayPalButtons();
+        buttonsRendered = true;
+      }
+    }
+
+    function renderPayPalButtons() {
+      paypal.Buttons({
+        // Set up the transaction
+        createOrder: function(data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: cartTotal.toFixed(2)
+              },
+              description: "Neighborhood Coffee Stand Order"
+            }]
+          });
+        },
+        // Finalize the transaction
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(function(details) {
+            alert('Transaction completed! Thanks for your order, ' + details.payer.name.given_name + '!');
+            // Reset cart
+            document.getElementById('cart-items').innerHTML = '';
+            cartTotal = 0;
+            orderItems = [];
+            document.getElementById('cart').style.display = 'none';
+            buttonsRendered = false;
+            document.getElementById('paypal-button-container').innerHTML = '';
+          });
+        }
+      }).render('#paypal-button-container');
+    }
+  </script>
+</body>
+</html>
